@@ -64,9 +64,20 @@ exports.handler = async function (event, context) {
     // Try to initialize Netlify Blobs store
     let store;
     try {
+      const siteId = context.site?.id || process.env.NETLIFY_SITE_ID;
+      const token = context.token || process.env.NETLIFY_AUTH_TOKEN;
+      
+      console.log("Site ID available:", !!siteId);
+      console.log("Token available:", !!token);
+      
+      if (!siteId) {
+        throw new Error("Site ID not available. Please set NETLIFY_SITE_ID environment variable.");
+      }
+      
       store = getStore({
         name: "published-projects",
-        siteID: context.site?.id
+        siteID: siteId,
+        token: token
       });
       console.log("Store initialized successfully");
     } catch (storeError) {

@@ -1,0 +1,11 @@
+# _redirects file for Netlify
+# Place this in the public/ folder or root of your site
+
+# Pretty URLs for published projects
+/projects/:filename  /.netlify/functions/serve-project?file=:filename  200
+
+# Short URLs alternative  
+/p/:filename  /.netlify/functions/serve-project?file=:filename  200
+
+# API routes (if needed)
+/api/publish  /.netlify/functions/publish-project  200
