@@ -1,16 +1,22 @@
 // netlify/functions/publish-project.js
-// CommonJS friendly, dynamic import + robust client init for @netlify/blobs
+const { getStore } = require("@netlify/blobs");
 
 const HEADERS_BASE = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Accept",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
+  "Content-Type": "application/json",
 };
 
-exports.handler = async function (event) {
+exports.handler = async function (event, context) {
+  // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: HEADERS_BASE, body: "" };
+    return { 
+      statusCode: 200, 
+      headers: HEADERS_BASE, 
+      body: JSON.stringify({ message: "CORS OK" })
+    };
   }
 
   if (event.httpMethod !== "POST") {
@@ -22,91 +28,130 @@ exports.handler = async function (event) {
   }
 
   try {
+    // Validate request body
     if (!event.body) {
-      return { statusCode: 400, headers: HEADERS_BASE, body: JSON.stringify({ error: "No body provided" }) };
+      return { 
+        statusCode: 400, 
+        headers: HEADERS_BASE, 
+        body: JSON.stringify({ error: "No body provided" }) 
+      };
     }
 
-    const { html_content, project_name, project_id } = JSON.parse(event.body);
-    if (!html_content || !project_name) {
-      return { statusCode: 400, headers: HEADERS_BASE, body: JSON.stringify({ error: "Missing html_content or project_name" }) };
-    }
-
-    // --- dynamic import of @netlify/blobs and robust client init ---
-    let client;
+    let requestData;
     try {
-      const blobsModule = await import("@netlify/blobs");
-      // log available keys for debugging (will show in function logs)
-      console.log("blobsModule keys:", Object.keys(blobsModule));
+      requestData = JSON.parse(event.body);
+    } catch (parseError) {
+      return {
+        statusCode: 400,
+        headers: HEADERS_BASE,
+        body: JSON.stringify({ error: "Invalid JSON in request body" })
+      };
+    }
 
-      // try common variants
-      if (typeof blobsModule.createClient === "function") {
-        client = blobsModule.createClient({ auth: process.env.NETLIFY_AUTH_TOKEN });
-      } else if (blobsModule.default && typeof blobsModule.default.createClient === "function") {
-        client = blobsModule.default.createClient({ auth: process.env.NETLIFY_AUTH_TOKEN });
-      } else if (typeof blobsModule.default === "function") {
-        // default export is a factory function
-        client = blobsModule.default({ auth: process.env.NETLIFY_AUTH_TOKEN });
-      } else if (typeof blobsModule.put === "function") {
-        // very unlikely: module itself exposes put -> wrap it
-        client = { put: blobsModule.put.bind(blobsModule) };
-      } else {
-        // fallback: also try to call createClient from nested default.default
-        if (blobsModule.default && typeof blobsModule.default.default === "function") {
-          client = blobsModule.default.default({ auth: process.env.NETLIFY_AUTH_TOKEN });
-        }
+    const { html_content, project_name, project_id } = requestData;
+    
+    if (!html_content || !project_name) {
+      return { 
+        statusCode: 400, 
+        headers: HEADERS_BASE, 
+        body: JSON.stringify({ error: "Missing html_content or project_name" }) 
+      };
+    }
+
+    // Initialize Netlify Blobs store - ΣΩΣΤΟΣ ΤΡΟΠΟΣ
+    let store;
+    try {
+      // Χρησιμοποίησε το site ID από το context
+      const siteId = context.site?.id || process.env.NETLIFY_SITE_ID;
+      
+      if (!siteId) {
+        throw new Error("Site ID not available");
       }
-    } catch (impErr) {
-      console.error("Error importing @netlify/blobs:", impErr);
-      throw new Error("Failed to import @netlify/blobs: " + (impErr && impErr.message ? impErr.message : String(impErr)));
+
+      store = getStore({
+        name: "published-projects",
+        siteID: siteId,
+        token: context.token || process.env.NETLIFY_AUTH_TOKEN
+      });
+
+      console.log("Store initialized successfully");
+    } catch (storeError) {
+      console.error("Store initialization error:", storeError);
+      return {
+        statusCode: 500,
+        headers: HEADERS_BASE,
+        body: JSON.stringify({ 
+          error: "Failed to initialize storage: " + storeError.message 
+        })
+      };
     }
 
-    if (!client || typeof client.put !== "function") {
-      console.error("Could not initialise @netlify/blobs client. client object:", client);
-      throw new Error("Could not initialise @netlify/blobs client (createClient not found or client.put missing)");
-    }
-
-    // --- build friendly filename ---
+    // Generate project ID and filename
+    const id = project_id || Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    
     const friendlyName = project_name
       .toLowerCase()
-      .replace(/[^a-z0-9α-ωά-ώ]/g, "-")
+      .replace(/[^a-z0-9α-ωά-ώ\s]/g, "-")
+      .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
-    const id = project_id || Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    
     const filename = `${friendlyName}-${id}.html`;
 
-    // --- upload to blobs ---
-    const blob = await client.put({
-      key: filename,
-      body: html_content,
-      visibility: "public",
-      type: "text/html",
-    });
+    // Store the HTML content
+    try {
+      await store.set(filename, html_content, {
+        metadata: {
+          projectName: project_name,
+          createdAt: new Date().toISOString(),
+          projectId: id
+        }
+      });
 
-    console.log("blob result:", blob);
-
-    const publicUrl = blob?.url || blob?.Location || blob?.Key || null;
-    if (!publicUrl) {
-      // sometimes the returned shape differs; include blob for debugging
-      throw new Error("No public URL returned from blob storage. blob: " + JSON.stringify(blob));
+      console.log(`Successfully stored project: ${filename}`);
+    } catch (storeSetError) {
+      console.error("Error storing content:", storeSetError);
+      return {
+        statusCode: 500,
+        headers: HEADERS_BASE,
+        body: JSON.stringify({ 
+          error: "Failed to store content: " + storeSetError.message 
+        })
+      };
     }
+
+    // Construct the public URL
+    // Η URL θα είναι διαθέσιμη μέσω του Netlify site
+    const publicUrl = `${process.env.URL || 'https://your-site.netlify.app'}/.netlify/blobs/published-projects/${filename}`;
+
+    const response = {
+      id,
+      project_name,
+      public_url: publicUrl,
+      filename,
+      message: project_id ? "Project updated successfully!" : "Project published successfully!",
+      action: project_id ? "updated" : "created",
+      timestamp: new Date().toISOString()
+    };
+
+    console.log("Success response:", response);
 
     return {
       statusCode: 200,
-      headers: { ...HEADERS_BASE, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        project_name,
-        public_url: publicUrl,
-        message: project_id ? "Project updated successfully!" : "Project published successfully!",
-        action: project_id ? "updated" : "created",
-      }),
+      headers: HEADERS_BASE,
+      body: JSON.stringify(response),
     };
+
   } catch (error) {
-    console.error("❌ publish-project error:", error);
+    console.error("❌ Unexpected error in publish-project:", error);
+    
     return {
       statusCode: 500,
       headers: HEADERS_BASE,
-      body: JSON.stringify({ error: error.message || String(error) }),
+      body: JSON.stringify({ 
+        error: "Internal server error: " + (error.message || String(error)),
+        timestamp: new Date().toISOString()
+      }),
     };
   }
 };
