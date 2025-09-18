@@ -1,10 +1,6 @@
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require("@netlify/blobs");
 
-const projectsDir = path.join(process.cwd(), 'public', 'projects');
-if (!fs.existsSync(projectsDir)) {
-  fs.mkdirSync(projectsDir, { recursive: true });
-}
+const client = createClient({ auth: process.env.NETLIFY_AUTH_TOKEN });
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -19,30 +15,18 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
     if (!event.body) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'No body provided' }),
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'No body provided' }) };
     }
 
     const { html_content, project_name, project_id } = JSON.parse(event.body);
 
     if (!html_content || !project_name) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Missing html_content or project_name' }),
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing html_content or project_name' }) };
     }
 
     // Δημιουργία φιλικού ονόματος αρχείου
@@ -51,23 +35,23 @@ exports.handler = async (event) => {
       .replace(/[^a-z0-9α-ωά-ώ]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
-    
+
     const id = project_id || Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
     const filename = `${friendlyName}-${id}.html`;
-    const filePath = path.join(projectsDir, filename);
-    
-    fs.writeFileSync(filePath, html_content);
 
-    // Δημιουργία clean URL
-    const siteUrl = process.env.URL || 'http://localhost:8888';
-    const publicUrl = `${siteUrl}/projects/${filename}`;
+    // Αποθήκευση στο Netlify Blobs
+    const blob = await client.put({
+      key: filename,
+      body: html_content,
+      visibility: 'public',
+      type: 'text/html',
+    });
+
+    const publicUrl = blob.url;
 
     return {
       statusCode: 200,
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json',
-      },
+      headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id,
         project_name,
@@ -78,10 +62,6 @@ exports.handler = async (event) => {
     };
   } catch (error) {
     console.error('❌ Error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Internal server error: ' + error.message }),
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
