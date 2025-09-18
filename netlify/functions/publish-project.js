@@ -120,14 +120,16 @@ exports.handler = async function (event, context) {
       };
     }
 
-    // Construct the public URL
-    // Η URL θα είναι διαθέσιμη μέσω του Netlify site
-    const publicUrl = `${process.env.URL || 'https://your-site.netlify.app'}/.netlify/blobs/published-projects/${filename}`;
+    // Construct the public URL using our serve function
+    const siteUrl = process.env.URL || `https://${context.site?.name || 'your-site'}.netlify.app`;
+    const publicUrl = `${siteUrl}/projects/${filename}`;
+    const fallbackUrl = `${siteUrl}/.netlify/functions/serve-project?file=${filename}`;
 
     const response = {
       id,
       project_name,
       public_url: publicUrl,
+      fallback_url: fallbackUrl,
       filename,
       message: project_id ? "Project updated successfully!" : "Project published successfully!",
       action: project_id ? "updated" : "created",
