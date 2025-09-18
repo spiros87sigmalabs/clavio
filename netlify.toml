@@ -1,6 +1,6 @@
 [build]
   functions = "netlify/functions"
-  publish = "public"
+  publish = "dist"   # σωστό για Vite build
 
 [functions]
   node_bundler = "esbuild"
@@ -33,4 +33,10 @@
 [[redirects]]
   from = "/projects/:project_name.html"
   to = "/projects/:project_name"
+  status = 200
+
+# SPA redirect για React Router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200
