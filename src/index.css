@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AI Landing Page Builder Design System - Dark Professional Theme */
+
+@layer base {
+  :root {
+    /* Main background - Deep dark for professional feel */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+
+    /* Card backgrounds - Slightly lighter than main */
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+
+    /* Popover backgrounds */
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary - Blue accent for actions */
+    --primary: 212 100% 47%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 212 100% 60%;
+
+    /* Secondary - Subtle gray for secondary elements */
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
+
+    /* Muted - For disabled/subtle elements */
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+
+    /* Accent - Purple accent for highlights */
+    --accent: 270 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive - Red for errors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 212 100% 47%;
+
+    /* Border radius */
+    --radius: 0.75rem;
+
+    /* Editor specific colors */
+    --editor-background: 0 0% 8%;
+    --editor-sidebar: 0 0% 6%;
+    --editor-line-numbers: 0 0% 40%;
+    --editor-selection: 212 100% 47% / 0.2;
+
+    /* Chat colors */
+    --chat-background: 0 0% 6%;
+    --chat-user-message: 0 0% 12%; /* #1f1f1f */
+    --chat-ai-message: 0 0% 6%; /* #0f0f0f */
+
+    /* Preview colors */
+    --preview-background: 0 0% 98%;
+    --preview-border: 0 0% 20%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(212 100% 47%), hsl(270 70% 60%));
+    --gradient-glow: linear-gradient(135deg, hsl(212 100% 47% / 0.1), hsl(270 70% 60% / 0.1));
+    --gradient-border: linear-gradient(135deg, hsl(212 100% 47% / 0.3), hsl(270 70% 60% / 0.3));
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-out;
+
+    /* Shadows */
+    --shadow-glow: 0 0 40px hsl(212 100% 47% / 0.15);
+    --shadow-elevation: 0 10px 30px -10px hsl(0 0% 0% / 0.3);
+  }
+
+  .dark {
+    /* Dark theme is the default for this app */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 212 100% 47%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 270 70% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 212 100% 47%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+}
+
+@layer components {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-glow {
+    background: var(--gradient-glow);
+  }
+  
+  .gradient-border {
+    background: var(--gradient-border);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-elevation {
+    box-shadow: var(--shadow-elevation);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-fast {
+    transition: var(--transition-fast);
+  }
+  
+  .typing-indicator {
+    animation: typing-pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes typing-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  
+  .code-streaming {
+    animation: code-highlight 0.5s ease-out;
+  }
+  
+  @keyframes code-highlight {
+    0% { background-color: hsl(212 100% 47% / 0.2); }
+    100% { background-color: transparent; }
+  }
+}

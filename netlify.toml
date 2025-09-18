@@ -1,0 +1,36 @@
+[build]
+  functions = "netlify/functions"
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+
+[dev]
+  targetPort = 8080
+  framework = "vite"
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Accept, Authorization"
+    Access-Control-Allow-Methods = "POST, OPTIONS, GET"
+    Access-Control-Max-Age = "86400"
+
+# Πρόσβαση στα projects
+[[redirects]]
+  from = "/projects/*"
+  to = "/projects/:splat"
+  status = 200
+
+# Clean URLs - ανακατεύθυνση από φιλικό URL
+[[redirects]]
+  from = "/p/:project_id"
+  to = "/.netlify/functions/serve-project?project_id=:project_id"
+  status = 200
+
+# Serve projects
+[[redirects]]
+  from = "/projects/:project_name.html"
+  to = "/projects/:project_name"
+  status = 200

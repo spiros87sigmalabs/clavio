@@ -1,0 +1,19 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Kastoria",
+			"country": {
+				"code": "GR",
+				"name": "Greece"
+			},
+			"subdivision": {
+				"code": "C",
+				"name": "West Macedonia"
+			},
+			"timezone": "Europe/Athens",
+			"latitude": 40.5165,
+			"longitude": 21.2614
+		},
+		"timestamp": 1758200433173
+	}
+}
