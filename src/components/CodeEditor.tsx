@@ -27,7 +27,8 @@ const CodeEditor = ({ code, isGenerating, onCodeChange, onToggleGeneration }: Co
   const { toast } = useToast();
 
   // Χρήση σχετικού URL για Netlify function
-  const NETLIFY_FUNCTION_URL = "/.netlify/functions/publish-project";
+  const NETLIFY_FUNCTION_URL = "https://lucent-mousse-547867.netlify.app/.netlify/functions/publish-project";
+
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     monaco.editor.defineTheme("ai-builder-dark", {
