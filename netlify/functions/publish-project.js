@@ -122,8 +122,8 @@ exports.handler = async function (event, context) {
 
     // Construct the public URL using our serve function
     const siteUrl = process.env.URL || `https://${context.site?.name || 'your-site'}.netlify.app`;
-    const publicUrl = `${siteUrl}/projects/${filename}`;
-    const fallbackUrl = `${siteUrl}/.netlify/functions/serve-project?file=${filename}`;
+    const publicUrl = `${siteUrl}/.netlify/functions/serve-project?file=${filename}`;
+    const fallbackUrl = `${siteUrl}/projects/${filename}`;
 
     const response = {
       id,
