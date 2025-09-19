@@ -635,23 +635,53 @@ const MainLayout = () => {
           return;
         }
         if (data?.reasoning) {
-          // Show actual API reasoning if available
-          console.log('AI Reasoning:', data.reasoning);
-          await streamReasoning(data.reasoning);
+  // Show actual API reasoning if available
+  console.log('AI Reasoning:', data.reasoning);
+  await streamReasoning(data.reasoning);
+  if (data?.content) {
+    setHtmlCode(data.content);
+    setIsGenerating(false);
+  } else {
+    setIsGenerating(false);
+  }
+} else {
           if (data?.content) {
-            setHtmlCode(data.content);
-            setIsGenerating(false);
-          } else {
-            setIsGenerating(false);
-          }
-        } else {
-          if (data?.content) {
-            // Apply the targeted changes
-            setHtmlCode(data.content);
-            setIsGenerating(false);
-          } else {
-            setIsGenerating(false);
-          }
+  // Validation: Έλεγχος αν η απάντηση είναι πλήρης HTML
+  const content = data.content.trim();
+  const isCompleteHTML = content.includes('<!DOCTYPE') || 
+                         content.includes('<html') ||
+                         (content.includes('<body') && content.length > htmlCode.length * 0.5);
+  
+  // Έλεγχος αν το περιεχόμενο δεν είναι υπερβολικά μικρό
+  const isReasonableLength = content.length > 1000; // Τουλάχιστον 1KB για μια landing page
+  
+  // Έλεγχος για σημεία που δείχνουν πλήρη HTML
+  const hasStructure = content.includes('<head>') && content.includes('<body>');
+  
+  if (isCompleteHTML && isReasonableLength && hasStructure) {
+    console.log('✅ Received complete HTML, updating code');
+    setHtmlCode(data.content);
+  } else {
+    console.warn('⚠️ Received incomplete HTML response:', {
+      length: content.length,
+      hasDoctype: content.includes('<!DOCTYPE'),
+      hasHtml: content.includes('<html'),
+      hasHead: content.includes('<head>'),
+      hasBody: content.includes('<body>'),
+      isReasonableLength
+    });
+    
+    // Fallback: Μην αλλάξεις τίποτα και ενημέρωσε τον χρήστη
+    toast({
+      variant: "destructive",
+      title: "Incomplete Response",
+      description: "AI returned incomplete code. Please try rephrasing your request."
+    });
+  }
+  setIsGenerating(false);
+} else {
+  setIsGenerating(false);
+}
         }
       } catch (error) {
         console.error('Error calling edge function for edit:', error);
@@ -843,7 +873,19 @@ const MainLayout = () => {
         
         {/* Preview Panel - Flexible width */}
         <div className="flex-1">
-          <PreviewPanel htmlCode={htmlCode} isGenerating={isGenerating} />
+         <PreviewPanel
+  htmlCode={htmlCode}
+  isGenerating={isGenerating}
+  onEditSelection={(htmlSnippet, content, userChange) => {
+    // Δημιουργούμε prompt που περιλαμβάνει HTML, αρχικό content και μήνυμα χρήστη
+    const prompt = `
+Edited section: ${htmlSnippet}
+Content: "${content}"
+User requested change: ${userChange}
+`;
+    handleSendMessage(prompt);
+  }}
+/>
         </div>
       </div>
     </div>;
